@@ -51,6 +51,8 @@ a.twitter {
 }
 
 a.linkedin {
-  background-color: white;
   color: #007bb6;
+}
+a.gmail {
+  color: orangered;
 }
