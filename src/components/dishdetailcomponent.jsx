@@ -147,7 +147,7 @@ function RenderDish({ dish }) {
   );
 }
 
-function RenderComments({ comments, postComment, dishId }) {
+function RenderComments({ comments }) {
   if (comments != null) {
     return (
       <div className="col-12 col-md-5 m-1">
@@ -169,7 +169,7 @@ function RenderComments({ comments, postComment, dishId }) {
             </div>
           );
         })}
-        <CommentForm dishId={dishId} postComment={postComment} />
+        <CommentForm />
       </div>
     );
   } else return <div />;
