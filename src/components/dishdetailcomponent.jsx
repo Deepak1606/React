@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   Card,
   CardImg,
@@ -18,7 +17,9 @@ import {
 } from "reactstrap";
 import { Control, LocalForm, Errors } from "react-redux-form";
 import { Link } from "react-router-dom";
-import { faPencilAlt } from "@fortawesome/free-solid-svg-icons";
+import { Loading } from "./loadingcomponent";
+import { baseUrl } from "../shared/baseUrl";
+import { FadeTransform, Fade, Stagger } from "react-animation-components";
 
 const required = val => val && val.length;
 const maxLength = len => val => !val || val.length <= len;
@@ -42,21 +43,24 @@ class CommentForm extends Component {
 
   handleSubmit(values) {
     this.toggleModal();
-    console.log("Current State is: " + JSON.stringify(values));
-    alert("Current State is: " + JSON.stringify(values));
+    this.props.postComment(
+      this.props.dishId,
+      values.rating,
+      values.author,
+      values.comment
+    );
   }
 
   render() {
     return (
       <div>
         <Button outline onClick={this.toggleModal}>
-          <FontAwesomeIcon icon={faPencilAlt} />
-          Submit Comment
+          <span className="fa fa-pencil" /> Submit Comment
         </Button>
         <Modal isOpen={this.state.isModalOpen} toggle={this.toggleModal}>
           <ModalHeader toggle={this.toggleModal}>Submit Comment</ModalHeader>
           <ModalBody>
-            <LocalForm onSubmit={values => this.handleSubmit(values)}>
+            <LocalForm onSubmit={this.handleSubmit}>
               <Row className="form-group">
                 <Label htmlFor="rating" md={12}>
                   Rating
@@ -64,12 +68,8 @@ class CommentForm extends Component {
                 <Col md={{ size: 12 }}>
                   <Control.select
                     model=".rating"
-                    id="rating"
                     name="rating"
                     className="form-control"
-                    validators={{
-                      required
-                    }}
                   >
                     <option>1</option>
                     <option>2</option>
@@ -136,47 +136,72 @@ class CommentForm extends Component {
 function RenderDish({ dish }) {
   return (
     <div className="col-12 col-md-5 m-1">
-      <Card>
-        <CardImg top src={dish.image} alt={dish.name} />
-        <CardBody>
-          <CardTitle>{dish.name}</CardTitle>
-          <CardText>{dish.description}</CardText>
-        </CardBody>
-      </Card>
+      <FadeTransform
+        in
+        transformProps={{
+          exitTransform: "scale(0.5) translateY(-50%)"
+        }}
+      >
+        <Card>
+          <CardImg top src={baseUrl + dish.image} alt={dish.name} />
+          <CardBody>
+            <CardTitle>{dish.name}</CardTitle>
+            <CardText>{dish.description}</CardText>
+          </CardBody>
+        </Card>
+      </FadeTransform>
     </div>
   );
 }
 
-function RenderComments({ comments }) {
+function RenderComments({ comments, postComment, dishId }) {
   if (comments != null) {
     return (
       <div className="col-12 col-md-5 m-1">
         <h4>Comments</h4>
-        {comments.map(comment => {
-          return (
-            <div key={comment.id}>
-              <li key={comment.id}>
-                <p>{comment.comment}</p>
-                <p>
-                  -- {comment.author} ,{" "}
-                  {new Intl.DateTimeFormat("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "2-digit"
-                  }).format(new Date(Date.parse(comment.date)))}
-                </p>
-              </li>
-            </div>
-          );
-        })}
-        <CommentForm />
+        <Stagger in>
+          {comments.map(comment => {
+            return (
+              <Fade in key={comment.id}>
+                <li key={comment.id}>
+                  <p>{comment.comment}</p>
+                  <p>
+                    -- {comment.author} ,{" "}
+                    {new Intl.DateTimeFormat("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "2-digit"
+                    }).format(new Date(Date.parse(comment.date)))}
+                  </p>
+                </li>
+              </Fade>
+            );
+          })}
+        </Stagger>
+        <CommentForm dishId={dishId} postComment={postComment} />
       </div>
     );
   } else return <div />;
 }
 
 const DishDetailComponent = props => {
-  if (props.dish != null)
+  if (props.isLoading) {
+    return (
+      <div className="container">
+        <div className="row">
+          <Loading />
+        </div>
+      </div>
+    );
+  } else if (props.errMess) {
+    return (
+      <div className="container">
+        <div className="row">
+          <h4>{props.errMess}</h4>
+        </div>
+      </div>
+    );
+  } else if (props.dish != null)
     return (
       <div className="container">
         <div className="row">
@@ -193,7 +218,11 @@ const DishDetailComponent = props => {
         </div>
         <div className="row">
           <RenderDish dish={props.dish} />
-          <RenderComments comments={props.comments} />
+          <RenderComments
+            comments={props.comments}
+            postComment={props.postComment}
+            dishId={props.dish.id}
+          />
         </div>
       </div>
     );
